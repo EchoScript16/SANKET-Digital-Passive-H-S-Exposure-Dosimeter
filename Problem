@@ -1,0 +1,23 @@
+## Problem
+
+Hydrogen sulfide (H₂S) is a hazardous gas encountered in several oil and gas operations.
+
+Conventional electronic gas detectors primarily provide instantaneous concentration measurements. However, for prolonged low-level exposure, the total exposure accumulated over time is also important.
+
+Existing passive colorimetric badges can provide a visual indication of exposure, but a visual color change alone does not directly provide:
+
+- A numerical cumulative exposure estimate
+- Digital exposure records
+- Objective color interpretation
+- A way to account for different lighting conditions
+- An independent indication of badge expiry or degradation
+
+### The core idea
+
+Instead of asking only:
+
+**"What is the H₂S concentration right now?"**
+
+SANKET focuses on:
+
+**"How much H₂S exposure has accumulated over the shift?"**
