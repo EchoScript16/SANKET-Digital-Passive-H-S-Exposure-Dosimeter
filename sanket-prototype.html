@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SANKET — Cumulative H2S Dosimeter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#211D1A;
+    --ink-2:#2B2520;
+    --paper:#EDE6D6;
+    --paper-dim:#E1D8C2;
+    --amber:#C9A227;
+    --amber-dim:#A8871E;
+    --rust:#241A14;
+    --steel:#8f877d9c;
+    --steel-2:#A79E8E;
+    --safe:#5C7A4E;
+    --straw:#EADFB8;
+    --line: rgba(237,230,216,0.14);
+    --line-strong: rgba(237,230,216,0.28);
+    --danger:#9C4430;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 1px 1px, rgba(237,230,216,0.06) 1px, transparent 0) 0 0/22px 22px,
+      var(--ink);
+    color:var(--paper);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    font-size:11px;
+    color:var(--steel-2);
+  }
+  h1,h2,h3,.display{
+    font-family:'Oswald', sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.02em;
+    margin:0;
+  }
+  /* ---------- header / tabs ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+    padding:20px 32px;
+    border-bottom:1px solid var(--line);
+    flex-wrap:wrap;
+    position:sticky; top:0; z-index:50;
+    background:rgba(33,29,26,0.92);
+    backdrop-filter:blur(6px);
+  }
+  .logo{
+    display:flex; align-items:center; gap:12px;
+  }
+  .logo-mark{
+    width:34px;height:34px;
+    border:2px solid var(--amber);
+    border-radius:3px;
+    position:relative;
+    background:
+      linear-gradient(180deg, var(--straw) 0%, var(--amber) 45%, var(--rust) 100%);
+  }
+  .logo-mark::after{
+    content:"";
+    position:absolute; left:6px; right:6px; top:50%;
+    height:1px; background:rgba(33,29,26,.5);
+  }
+  .logo-text .display{font-size:22px; color:var(--paper); line-height:1;}
+  .logo-text .eyebrow{margin-top:2px;}
+  .tabs{
+    display:flex; gap:2px;
+    background:var(--ink-2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:3px;
+  }
+  .tab-btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--steel-2);
+    background:transparent;
+    border:none;
+    padding:9px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:all .15s ease;
+    white-space:nowrap;
+  }
+  .tab-btn:hover{color:var(--paper);}
+  .tab-btn.active{
+    background:var(--amber);
+    color:var(--ink);
+    font-weight:600;
+  }
+  /* ---------- stage ---------- */
+  .stage{
+    padding:56px 24px 90px;
+    display:flex;
+    justify-content:center;
+  }
+  .panel{ display:none; width:100%; max-width:1180px; }
+  .panel.active{ display:block; animation:fade .35s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .panel-head{ text-align:center; margin-bottom:44px; }
+  .panel-head h2{ font-size:34px; color:var(--paper); }
+  .panel-head p{ color:var(--steel-2); max-width:560px; margin:10px auto 0; font-size:14.5px; line-height:1.6;}
+
+  /* ================= WRISTBAND TAB ================= */
+  .band-wrap{
+    display:grid;
+    grid-template-columns:1.15fr .85fr;
+    gap:48px;
+    align-items:center;
+  }
+  .band-illustration{
+    background:var(--ink-2);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:40px 30px 30px;
+    position:relative;
+  }
+  .callout{
+    position:absolute;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--paper);
+    max-width:170px;
+    line-height:1.45;
+  }
+  .callout .num{
+    color:var(--amber);
+    font-weight:700;
+    margin-right:4px;
+  }
+  .gradient-scale{
+    height:22px;
+    border-radius:3px;
+    background:linear-gradient(90deg,#EADFB8 0%, #C9A227 30%, #7A4B24 62%, #241A14 100%);
+    border:1px solid rgba(0,0,0,.25);
+    position:relative;
+  }
+  .scale-ticks{ display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--steel-2); margin-top:5px;}
+
+  .band-specs{ display:flex; flex-direction:column; gap:22px; }
+  .spec-row{
+    display:flex; gap:14px; align-items:flex-start;
+    padding-bottom:18px; border-bottom:1px solid var(--line);
+  }
+  .spec-row:last-child{ border-bottom:none; }
+  .spec-idx{
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--amber); font-weight:700; font-size:13px;
+    width:22px; flex-shrink:0;
+  }
+  .spec-row h3{ font-size:14.5px; color:var(--paper); margin-bottom:4px; letter-spacing:.03em;}
+  .spec-row p{ font-size:12.8px; color:var(--steel-2); line-height:1.55; margin:0; }
+
+  .how-it-works{
+    margin-top:52px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+  }
+  .hiw-card{
+    background:var(--ink-2);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:20px;
+  }
+  .hiw-card .step-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px; color:var(--amber); letter-spacing:.1em;
+  }
+  .hiw-card h3{ font-size:16px; margin:8px 0 6px; color:var(--paper); }
+  .hiw-card p{ font-size:12.5px; color:var(--steel-2); line-height:1.55; margin:0;}
+
+  /* ================= PHONE FRAME ================= */
+  .app-wrap{
+    display:grid;
+    grid-template-columns:340px 1fr;
+    gap:56px;
+    align-items:flex-start;
+  }
+  .phone{
+    width:320px;
+    background:#171310;
+    border-radius:38px;
+    border:8px solid #100D0A;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(237,230,216,.06);
+    overflow:hidden;
+    margin:0 auto;
+  }
+  .phone-notch{
+    height:26px; background:#171310;
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .phone-notch::after{
+    content:"";
+    width:70px; height:14px; background:#100D0A; border-radius:10px;
+  }
+  .phone-screen{
+    background:var(--ink);
+    min-height:600px;
+    padding:18px 16px 22px;
+    position:relative;
+  }
+  .status-row{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--steel-2);
+    margin-bottom:16px;
+  }
+  .screen-title{ font-size:11px; letter-spacing:.12em; color:var(--steel-2); margin-bottom:2px;}
+
+  .side-notes{ padding-top:34px; }
+  .side-notes h3{ font-size:20px; color:var(--paper); margin-bottom:14px; }
+  .note-item{ display:flex; gap:12px; margin-bottom:18px; }
+  .note-dot{ width:8px;height:8px; border-radius:50%; background:var(--amber); margin-top:6px; flex-shrink:0;}
+  .note-item p{ font-size:13px; color:var(--steel-2); line-height:1.6; margin:0;}
+  .note-item strong{ color:var(--paper); }
+
+  /* --- Home screen --- */
+  .worker-card{
+    background:var(--ink-2); border:1px solid var(--line); border-radius:12px;
+    padding:16px; margin-bottom:14px;
+  }
+  .worker-top{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .worker-name{ font-size:16px; color:var(--paper); font-weight:600; }
+  .worker-id{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--steel-2); margin-top:2px;}
+  .chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px; letter-spacing:.05em;
+    padding:4px 9px; border-radius:20px;
+    display:inline-flex; align-items:center; gap:5px;
+  }
+  .chip.safe{ background:rgba(94,120,72,.18); color:#BFCB9C; border:1px solid rgba(94,120,72,.4);}
+  .chip.warn{ background:rgba(201,162,39,.16); color:var(--amber); border:1px solid rgba(201,162,39,.4);}
+  .chip.danger{ background:rgba(156,68,42,.18); color:#E3AE97; border:1px solid rgba(156,68,42,.45);}
+  .chip::before{ content:""; width:6px;height:6px;border-radius:50%; background:currentColor;}
+  .worker-meta{ display:flex; gap:16px; margin-top:12px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--steel-2);}
+  .worker-meta b{ color:var(--paper); display:block; font-size:13px; font-family:'IBM Plex Sans',sans-serif; margin-top:2px;}
+
+  .dose-mini{ background:var(--ink-2); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px;}
+  .dose-mini-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+  .dose-mini-val{ font-family:'IBM Plex Mono',monospace; font-size:22px; color:var(--paper); font-weight:600;}
+  .dose-mini-unit{ font-size:10px; color:var(--steel-2); }
+
+  .cta-btn{
+    width:100%; padding:15px; border-radius:10px; border:none;
+    background:var(--amber); color:var(--ink); font-family:'Oswald',sans-serif;
+    letter-spacing:.05em; font-size:15px; text-transform:uppercase; cursor:pointer;
+    margin-top:4px;
+  }
+  .cta-btn.ghost{ background:transparent; border:1px solid var(--line-strong); color:var(--paper); margin-top:10px;}
+
+  .activity-list{ margin-top:14px; }
+  .activity-row{ display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:11.5px;}
+  .activity-row:last-child{ border-bottom:none;}
+  .activity-row span:first-child{ color:var(--steel-2); font-family:'IBM Plex Mono',monospace; font-size:10px;}
+
+  /* --- Scan screen --- */
+  .segmented{ display:flex; background:var(--ink-2); border:1px solid var(--line); border-radius:8px; padding:3px; margin-bottom:16px;}
+  .seg-btn{ flex:1; text-align:center; padding:7px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.05em; color:var(--steel-2); border-radius:6px; cursor:pointer; text-transform:uppercase;}
+  .seg-btn.active{ background:var(--amber); color:var(--ink); font-weight:600;}
+  .viewfinder{
+    background:#05090a; border:1px solid var(--line-strong); border-radius:14px;
+    height:280px; position:relative; overflow:hidden; margin-bottom:14px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .vf-frame{
+    width:82%; height:60%; border:2px dashed rgba(201,162,39,.7); border-radius:8px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  }
+  .vf-strip-mock{ width:70%; height:16px; border-radius:2px; background:linear-gradient(90deg,#EADFB8,#A8871E); }
+  .vf-ref-mock{ width:70%; height:9px; border-radius:2px; background:repeating-linear-gradient(90deg,#EADFB8 0 8px,#C9A227 8px 16px,#7A4B24 16px 24px,#241A14 24px 32px);}
+  .vf-caption{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--steel-2); text-align:center; padding:0 20px;}
+  .corner{ position:absolute; width:16px; height:16px; border-color:var(--amber); }
+  .corner.tl{ top:10px; left:10px; border-top:2px solid; border-left:2px solid; border-radius:3px 0 0 0;}
+  .corner.tr{ top:10px; right:10px; border-top:2px solid; border-right:2px solid; border-radius:0 3px 0 0;}
+  .corner.bl{ bottom:10px; left:10px; border-bottom:2px solid; border-left:2px solid; border-radius:0 0 0 3px;}
+  .corner.br{ bottom:10px; right:10px; border-bottom:2px solid; border-right:2px solid; border-radius:0 0 3px 0;}
+  .env-row{ display:flex; gap:8px; margin-bottom:14px;}
+  .env-pill{ flex:1; background:var(--ink-2); border:1px solid var(--line); border-radius:8px; padding:8px 10px; text-align:center;}
+  .env-pill .v{ font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--paper); font-weight:600;}
+  .env-pill .l{ font-size:8.5px; color:var(--steel-2); letter-spacing:.08em; text-transform:uppercase; margin-top:2px;}
+  .shutter-row{ display:flex; justify-content:center; margin:6px 0 4px;}
+  .shutter{
+    width:62px; height:62px; border-radius:50%; border:3px solid var(--amber);
+    background:transparent; cursor:pointer; position:relative;
+  }
+  .shutter::after{ content:""; position:absolute; inset:6px; border-radius:50%; background:var(--amber);}
+
+  /* --- processing overlay --- */
+  .processing{ text-align:center; padding:40px 10px;}
+  .spin{
+    width:44px;height:44px;border-radius:50%; margin:0 auto 18px;
+    border:3px solid var(--line-strong); border-top-color:var(--amber);
+    animation:spin 0.9s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+  .processing p{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--steel-2); margin:4px 0;}
+
+  /* --- result screen --- */
+  .result-hero{ text-align:center; padding:6px 0 18px;}
+  .result-num{ font-family:'IBM Plex Mono',monospace; font-size:44px; font-weight:700; color:var(--paper); line-height:1;}
+  .result-unit{ font-size:12px; color:var(--steel-2); margin-top:4px;}
+  .result-ci{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--steel-2); margin-top:6px;}
+  .gradient-marker-wrap{ position:relative; margin:18px 0 6px;}
+  .marker{
+    position:absolute; top:-9px; width:2px; height:38px; background:var(--paper);
+  }
+  .marker::after{
+    content:""; position:absolute; top:-6px; left:50%; transform:translateX(-50%);
+    width:0;height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:6px solid var(--paper);
+  }
+  .threshold-line{ position:absolute; top:0; bottom:0; width:1px; background:rgba(33,29,26,.55);}
+  .threshold-label{ position:absolute; top:26px; font-family:'IBM Plex Mono',monospace; font-size:8px; color:var(--steel-2); transform:translateX(-50%);}
+  .status-flag{ display:flex; justify-content:center; margin:22px 0 8px;}
+  .env-note{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--steel-2); text-align:center; margin-top:6px; line-height:1.6;}
+  .sparkline-wrap{ margin-top:20px; background:var(--ink-2); border:1px solid var(--line); border-radius:12px; padding:14px;}
+  .sparkline-top{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--steel-2); margin-bottom:8px;}
+
+  /* --- log screen --- */
+  .log-table{ width:100%; border-collapse:collapse; margin-top:6px;}
+  .log-table th{ text-align:left; font-family:'IBM Plex Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:var(--steel-2); padding-bottom:8px; border-bottom:1px solid var(--line-strong);}
+  .log-table td{ padding:9px 0; font-size:11px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  .log-table td.mono{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--steel-2);}
+
+  /* ================= REPORT TAB ================= */
+  .report-wrap{ display:flex; justify-content:center; }
+  .report-doc{
+    width:100%; max-width:760px;
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:4px;
+    padding:44px 48px 40px;
+    box-shadow:0 30px 70px -30px rgba(0,0,0,.6);
+  }
+  .report-head{ display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid var(--ink); padding-bottom:16px; margin-bottom:20px;}
+  .report-head .display{ font-size:22px; color:var(--ink);}
+  .report-head .sub{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:#6B6154; margin-top:4px;}
+  .report-tag{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#6B6154; line-height:1.6;}
+  .report-grid{ display:grid; grid-template-columns:1fr 1fr; gap:0 30px; margin-bottom:22px;}
+  .rg-item{ padding:9px 0; border-bottom:1px solid rgba(33,29,26,.12); display:flex; justify-content:space-between; font-size:12px;}
+  .rg-item span:first-child{ color:#6B6154; font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.04em;}
+  .rg-item span:last-child{ font-weight:600;}
+  .report-section-title{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.1em; color:#6B6154; margin:26px 0 10px; border-top:1px solid rgba(33,29,26,.15); padding-top:16px;}
+  .exposure-table{ width:100%; border-collapse:collapse;}
+  .exposure-table th{ text-align:left; font-family:'IBM Plex Mono',monospace; font-size:9.5px; text-transform:uppercase; color:#6B6154; padding:6px 8px; background:rgba(33,29,26,.06);}
+  .exposure-table td{ padding:8px 8px; font-size:12px; border-bottom:1px solid rgba(33,29,26,.1);}
+  .report-flag{ margin-top:20px; padding:14px 16px; border-radius:6px; display:flex; gap:12px; align-items:flex-start;}
+  .report-flag.ok{ background:rgba(94,120,72,.12); border:1px solid rgba(94,120,72,.4);}
+  .report-flag h4{ margin:0 0 4px; font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:14px; color:var(--safe);}
+  .report-flag p{ margin:0; font-size:11.5px; color:#463F33; line-height:1.55;}
+  .report-foot{ display:flex; justify-content:space-between; margin-top:34px; padding-top:16px; border-top:1px solid rgba(33,29,26,.15);}
+  .sig-block{ text-align:center; }
+  .sig-line{ width:150px; border-top:1px solid #463F33; margin-top:38px; padding-top:6px; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#6B6154;}
+  .qr-mock{ width:56px;height:56px; background:
+      repeating-linear-gradient(0deg, var(--ink) 0 4px, transparent 4px 8px),
+      repeating-linear-gradient(90deg, var(--ink) 0 4px, transparent 4px 8px);
+    background-blend-mode:multiply; opacity:.85; border:1px solid var(--ink);
+  }
+  .export-row{ display:flex; gap:10px; justify-content:center; margin-top:26px;}
+  .exp-btn{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.05em; text-transform:uppercase; padding:11px 20px; border-radius:8px; border:1px solid var(--line-strong); background:transparent; color:var(--paper); cursor:pointer;}
+  .exp-btn.primary{ background:var(--amber); color:var(--ink); border:none; font-weight:600;}
+
+  @media (max-width:920px){
+    .band-wrap, .app-wrap{ grid-template-columns:1fr; }
+    .how-it-works{ grid-template-columns:1fr; }
+    .report-doc{ padding:28px 22px; }
+    .report-grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div class="logo-text">
+      <div class="display">SANKET</div>
+      <div class="eyebrow">Cumulative H₂S Dosimeter</div>
+    </div>
+  </div>
+  <div class="tabs" id="tabs">
+    <button class="tab-btn active" data-panel="wristband">Wristband</button>
+    <button class="tab-btn" data-panel="home">Home</button>
+    <button class="tab-btn" data-panel="scan">Scan</button>
+    <button class="tab-btn" data-panel="result">Result</button>
+    <button class="tab-btn" data-panel="log">Log</button>
+    <button class="tab-btn" data-panel="report">Report</button>
+  </div>
+</div>
+
+<div class="stage">
+
+  <!-- ================= WRISTBAND ================= -->
+  <div class="panel active" id="panel-wristband">
+    <div class="panel-head">
+      <div class="eyebrow">Hardware Concept</div>
+      <h2>The Badge, Worn Not Watched</h2>
+      <p>A disposable wristband, no battery, no calibration upkeep. Two independent chemical reactions read at a glance or by phone: one for dose, one for shelf life.</p>
+    </div>
+
+    <div class="band-wrap">
+      <div class="band-illustration">
+        <svg viewBox="0 0 520 300" width="100%" height="auto" style="overflow:visible">
+          <!-- wrist strap -->
+          <path d="M20 150 C20 90, 90 60, 260 60 C430 60, 500 90, 500 150 C500 210, 430 240, 260 240 C90 240, 20 210, 20 150 Z"
+                fill="none" stroke="#4A4038" stroke-width="22" stroke-linecap="round"/>
+          <!-- housing -->
+          <rect x="150" y="95" width="220" height="110" rx="10" fill="#171310" stroke="#4A4038" stroke-width="2"/>
+          <!-- dose strip window -->
+          <rect x="168" y="112" width="184" height="26" rx="3" fill="url(#doseGrad)" stroke="#000" stroke-opacity=".3"/>
+          <text x="260" y="129" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#211D1A" font-weight="600">DOSE STRIP</text>
+          <!-- reference scale -->
+          <rect x="168" y="144" width="184" height="12" rx="2" fill="url(#refGrad)"/>
+          <!-- expiry patch -->
+          <rect x="168" y="168" width="60" height="26" rx="3" fill="#BFCB9C" stroke="#000" stroke-opacity=".25"/>
+          <text x="198" y="185" text-anchor="middle" font-family="IBM Plex Mono" font-size="7.5" fill="#211D1A" font-weight="600">VALID</text>
+          <text x="240" y="182" font-family="IBM Plex Mono" font-size="8" fill="#A79E8E">Expiry</text>
+          <text x="240" y="192" font-family="IBM Plex Mono" font-size="8" fill="#A79E8E">patch</text>
+          <!-- QR / worker id -->
+          <rect x="300" y="168" width="52" height="26" rx="2" fill="#2A2118" stroke="#4A4038"/>
+          <text x="326" y="184" text-anchor="middle" font-family="IBM Plex Mono" font-size="7" fill="#A79E8E">ID · QR</text>
+          <defs>
+            <linearGradient id="doseGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#EADFB8"/>
+              <stop offset="45%" stop-color="#C9A227"/>
+              <stop offset="100%" stop-color="#241A14"/>
+            </linearGradient>
+            <linearGradient id="refGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#EADFB8"/>
+              <stop offset="30%" stop-color="#C9A227"/>
+              <stop offset="62%" stop-color="#7A4B24"/>
+              <stop offset="100%" stop-color="#241A14"/>
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <div class="callout" style="top:6px; left:26px;"><span class="num">01</span>Progressive strip darkens permanently — position along the gradient encodes cumulative ppm·h, not a pass/fail line.</div>
+        <div class="callout" style="top:6px; right:20px; text-align:right; max-width:160px;"><span class="num">02</span>Printed reference scale, light-fast pigment, sealed under the same window for in-frame calibration.</div>
+        <div class="callout" style="bottom:14px; left:26px;"><span class="num">03</span>Independent expiry patch — its own reaction confirms shelf life before the shift starts.</div>
+        <div class="callout" style="bottom:14px; right:20px; text-align:right; max-width:150px;"><span class="num">04</span>Worker ID / QR for shift logging without manual entry.</div>
+      </div>
+
+      <div class="band-specs">
+        <div class="spec-row">
+          <div class="spec-idx">A</div>
+          <div><h3>Sensing chemistry</h3><p>Indigenously formulated lead-acetate–free colorimetric layer, selected for a monotonic, near-continuous darkening response across the occupational range rather than a single threshold snap.</p></div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">B</div>
+          <div><h3>Sealed reference cell</h3><p>The printed scale sits under the same clear window as the strip, so a single photograph captures both under identical ambient light — the basis for in-app colour correction.</p></div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">C</div>
+          <div><h3>Expiry patch</h3><p>A second, separately encapsulated reaction that visibly shifts colour on its own fixed timeline, giving a pre-shift valid / expired check independent of H₂S exposure.</p></div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">D</div>
+          <div><h3>Form factor</h3><p>Disposable, adhesive-free wristband, worn at collar or wrist height per DGMS placement guidance. No battery, no electronics, no field calibration.</p></div>
+        </div>
+        <div class="gradient-scale"></div>
+        <div class="scale-ticks"><span>0 ppm·h</span><span>OEL·8h</span><span>Action level</span><span>Saturated</span></div>
+      </div>
+    </div>
+
+    <div class="how-it-works">
+      <div class="hiw-card">
+        <div class="step-tag">STEP 01 · DIFFUSE</div>
+        <h3>Diffusion</h3>
+        <p>Ambient H₂S diffuses through a controlled membrane at a known, temperature-compensated rate onto the reactive layer.</p>
+      </div>
+      <div class="hiw-card">
+        <div class="step-tag">STEP 02 · REACT</div>
+        <h3>Reaction</h3>
+        <p>The layer darkens irreversibly and cumulatively — each unit of ppm·h adds to the stain, it does not reset or fade.</p>
+      </div>
+      <div class="hiw-card">
+        <div class="step-tag">STEP 03 · READ</div>
+        <h3>Digital read</h3>
+        <p>A phone photograph, corrected against the sealed reference scale, converts stain colour into an estimated cumulative dose.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= HOME ================= -->
+  <div class="panel" id="panel-home">
+    <div class="panel-head">
+      <div class="eyebrow">Phone App</div>
+      <h2>Before The Shift Starts</h2>
+      <p>Worker opens the app, sees badge validity and running dose at a glance, then scans.</p>
+    </div>
+    <div class="app-wrap">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="status-row"><span>9:41</span><span>SANKET · SHIFT B</span></div>
+          <div class="worker-card">
+            <div class="worker-top">
+              <div>
+                <div class="worker-name">R. Fernandes</div>
+                <div class="worker-id">WORKER ID · OG-4471</div>
+              </div>
+              <span class="chip safe">Badge valid</span>
+            </div>
+            <div class="worker-meta">
+              <div><span>Site</span><b>Rig 12 · Wellhead</b></div>
+              <div><span>Badge age</span><b>18 / 90 days</b></div>
+            </div>
+          </div>
+          <div class="dose-mini">
+            <div class="dose-mini-top">
+              <span class="screen-title">Cumulative dose · this badge</span>
+              <span class="dose-mini-unit">ppm·h</span>
+            </div>
+            <div class="dose-mini-val">6.2</div>
+            <div class="gradient-scale" style="height:10px; margin-top:8px;"></div>
+          </div>
+          <button class="cta-btn" data-goto="scan">Scan Badge →</button>
+          <button class="cta-btn ghost" data-goto="log">View Exposure Log</button>
+          <div class="activity-list">
+            <div class="screen-title" style="margin-bottom:6px;">Recent activity</div>
+            <div class="activity-row"><span>TODAY 06:02</span><span>Pre-shift check · Valid</span></div>
+            <div class="activity-row"><span>YESTERDAY</span><span>Dose scan · 4.8 ppm·h</span></div>
+            <div class="activity-row"><span>2 DAYS AGO</span><span>Dose scan · 3.1 ppm·h</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="side-notes">
+        <h3>Why this screen matters</h3>
+        <div class="note-item"><div class="note-dot"></div><p><strong>Badge validity first.</strong> The expiry patch status gates the shift — a degraded badge is flagged before anyone relies on it.</p></div>
+        <div class="note-item"><div class="note-dot"></div><p><strong>Running total, not a snapshot.</strong> The dose figure carries over scan to scan, matching the badge's own permanent, cumulative stain.</p></div>
+        <div class="note-item"><div class="note-dot"></div><p><strong>Offline-first.</strong> Reads and logs locally on the phone; syncs to the occupational health record when connectivity is available.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SCAN ================= -->
+  <div class="panel" id="panel-scan">
+    <div class="panel-head">
+      <div class="eyebrow">Phone App</div>
+      <h2>Photograph, Not Judgement Call</h2>
+      <p>The camera guide frames strip and reference scale together, so the app can correct for whatever light the photo was taken in.</p>
+    </div>
+    <div class="app-wrap">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="status-row"><span>9:43</span><span>SCAN</span></div>
+          <div class="segmented">
+            <div class="seg-btn active" id="seg-dose">Dose Strip</div>
+            <div class="seg-btn" id="seg-expiry">Expiry Patch</div>
+          </div>
+          <div class="viewfinder">
+            <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+            <div class="vf-frame">
+              <div class="vf-strip-mock"></div>
+              <div class="vf-ref-mock"></div>
+              <div class="vf-caption">Align strip and reference card within frame</div>
+            </div>
+          </div>
+          <div class="env-row">
+            <div class="env-pill"><div class="v">34°C</div><div class="l">Temp (est.)</div></div>
+            <div class="env-pill"><div class="v">68%</div><div class="l">Humidity (est.)</div></div>
+            <div class="env-pill"><div class="v">Good</div><div class="l">Light quality</div></div>
+          </div>
+          <div class="shutter-row"><button class="shutter" id="capture-btn"></button></div>
+          <div style="text-align:center; font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--steel-2);">Tap to capture and process</div>
+        </div>
+      </div>
+      <div class="side-notes">
+        <h3>What the app is compensating for</h3>
+        <div class="note-item"><div class="note-dot"></div><p><strong>Lighting.</strong> Colour is read relative to the sealed reference scale in the same frame, not against an absolute colour standard.</p></div>
+        <div class="note-item"><div class="note-dot"></div><p><strong>Temperature & humidity.</strong> Reaction speed shifts with ambient conditions; on-device sensors (or manual entry) feed a compensation factor into the estimate.</p></div>
+        <div class="note-item"><div class="note-dot"></div><p><strong>Two independent reads.</strong> Dose strip and expiry patch are scanned and scored separately — one never masks the other.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= RESULT ================= -->
+  <div class="panel" id="panel-result">
+    <div class="panel-head">
+      <div class="eyebrow">Phone App</div>
+      <h2>An Estimate, Stated As One</h2>
+      <p>Colorimetric response isn't perfectly linear at low concentration or long duration — the app reports a range, not false precision.</p>
+    </div>
+    <div class="app-wrap">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="status-row"><span>9:44</span><span>RESULT</span></div>
+          <div class="result-hero">
+            <div class="screen-title">Cumulative exposure · badge lifetime</div>
+            <div class="result-num">18.4</div>
+            <div class="result-unit">ppm·h (estimated)</div>
+            <div class="result-ci">95% est. range · 15.1 – 21.7 ppm·h</div>
+          </div>
+          <div class="gradient-marker-wrap">
+            <div class="gradient-scale"></div>
+            <div class="marker" style="left:38%;"></div>
+            <div class="threshold-line" style="left:22%;"></div>
+            <div class="threshold-label" style="left:22%;">OEL·8h</div>
+            <div class="threshold-line" style="left:65%;"></div>
+            <div class="threshold-label" style="left:65%;">Action</div>
+          </div>
+          <div class="status-flag"><span class="chip warn" style="font-size:11px; padding:6px 14px; white-space:nowrap;">Caution · approaching action level</span></div>
+          <div class="env-note">Compensated for 34°C / 68% RH at time of capture · badge day 18 of 90</div>
+          <div class="sparkline-wrap">
+            <div class="sparkline-top"><span>7-day accumulation</span><span style="font-family:'IBM Plex Mono',monospace;">ppm·h</span></div>
+            <svg viewBox="0 0 280 60" width="100%" height="60">
+              <polyline points="0,52 40,46 80,41 120,34 160,29 200,22 240,14 280,10" fill="none" stroke="#C9A227" stroke-width="2.5"/>
+              <circle cx="280" cy="10" r="3.5" fill="#C9A227"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="side-notes">
+        <h3>Reading the result honestly</h3>
+        <div class="note-item"><div class="note-dot"></div><p><strong>Range, not a single number.</strong> The confidence band reflects known non-linearity of colorimetric reactions at low concentration and long duration.</p></div>
+        <div class="note-item"><div class="note-dot"></div><p><strong>Position on the same gradient.</strong> The marker sits on the identical scale printed on the physical badge — what the officer sees by eye matches what the app reports.</p></div>
+        <div class="note-item"><div class="note-dot"></div><p><strong>Action thresholds are visible</strong>, not hidden inside a colour — OEL and action-level lines are marked directly on the scale.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= LOG ================= -->
+  <div class="panel" id="panel-log">
+    <div class="panel-head">
+      <div class="eyebrow">Phone App</div>
+      <h2>Every Reading, Kept</h2>
+      <p>Each scan is logged against worker ID, shift and badge — the record base for occupational health and statutory reporting.</p>
+    </div>
+    <div class="app-wrap">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen" style="min-height:auto;">
+          <div class="status-row"><span>9:46</span><span>EXPOSURE LOG</span></div>
+          <table class="log-table">
+            <thead><tr><th>Date</th><th>Shift</th><th>Dose</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">30 Aug</td><td>B</td><td class="mono">18.4</td><td><span class="chip warn">Caution</span></td></tr>
+              <tr><td class="mono">29 Aug</td><td>B</td><td class="mono">14.2</td><td><span class="chip safe">Normal</span></td></tr>
+              <tr><td class="mono">28 Aug</td><td>A</td><td class="mono">11.0</td><td><span class="chip safe">Normal</span></td></tr>
+              <tr><td class="mono">27 Aug</td><td>A</td><td class="mono">7.6</td><td><span class="chip safe">Normal</span></td></tr>
+              <tr><td class="mono">26 Aug</td><td>B</td><td class="mono">3.1</td><td><span class="chip safe">Normal</span></td></tr>
+              <tr><td class="mono">12 Aug</td><td>—</td><td class="mono">—</td><td><span class="chip danger">Badge expired</span></td></tr>
+            </tbody>
+          </table>
+          <button class="cta-btn" style="margin-top:16px;" data-goto="report">Generate DGMS Report →</button>
+        </div>
+      </div>
+      <div class="side-notes">
+        <h3>Built for the register, not just the worker</h3>
+        <div class="note-item"><div class="note-dot"></div><p><strong>Tamper-evident trail.</strong> Every scan timestamps the photo, GPS-tagged site, and computed dose — nothing is hand-entered after the fact.</p></div>
+        <div class="note-item"><div class="note-dot"></div><p><strong>Badge lifecycle visible.</strong> Expired-badge events are logged as their own status, not silently dropped.</p></div>
+        <div class="note-item"><div class="note-dot"></div><p><strong>Exports to the format DGMS / OISD expect</strong> — see the Report tab.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= REPORT ================= -->
+  <div class="panel" id="panel-report">
+    <div class="panel-head">
+      <div class="eyebrow">Compliance Output</div>
+      <h2>DGMS / OISD-Style Exposure Record</h2>
+      <p>The same logged data, formatted for statutory occupational health reporting — exportable per worker, per site, per period.</p>
+    </div>
+    <div class="report-wrap">
+      <div class="report-doc">
+        <div class="report-head">
+          <div>
+            <div class="display">H₂S Cumulative Exposure Record</div>
+            <div class="sub">Format ref. DGMS Circular (Health) · OISD-GDN-206 style · Generated by SANKET</div>
+          </div>
+          <div class="report-tag">Site: Rig 12, Wellhead<br>Report period: 24–30 Aug 2026<br>Generated: 30 Aug 2026, 09:47 IST</div>
+        </div>
+
+        <div class="report-grid">
+          <div class="rg-item"><span>Worker name</span><span>R. Fernandes</span></div>
+          <div class="rg-item"><span>Worker ID</span><span>OG-4471</span></div>
+          <div class="rg-item"><span>Designation</span><span>Field Technician</span></div>
+          <div class="rg-item"><span>Badge ID</span><span>SK-90D-00842</span></div>
+          <div class="rg-item"><span>Badge issued</span><span>12 Aug 2026</span></div>
+          <div class="rg-item"><span>Badge validity</span><span>90 days · Valid</span></div>
+        </div>
+
+        <div class="report-section-title">Exposure summary</div>
+        <table class="exposure-table">
+          <thead><tr><th>Date</th><th>Shift</th><th>Cumulative dose (ppm·h)</th><th>Est. range</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>26 Aug</td><td>B</td><td>3.1</td><td>2.6 – 3.6</td><td>Normal</td></tr>
+            <tr><td>27 Aug</td><td>A</td><td>7.6</td><td>6.5 – 8.7</td><td>Normal</td></tr>
+            <tr><td>28 Aug</td><td>A</td><td>11.0</td><td>9.4 – 12.6</td><td>Normal</td></tr>
+            <tr><td>29 Aug</td><td>B</td><td>14.2</td><td>12.1 – 16.3</td><td>Normal</td></tr>
+            <tr><td>30 Aug</td><td>B</td><td>18.4</td><td>15.1 – 21.7</td><td>Caution</td></tr>
+          </tbody>
+        </table>
+
+        <div class="report-flag ok">
+          <div style="font-size:20px;">✓</div>
+          <div>
+            <h4>Within permissible cumulative limit</h4>
+            <p>Latest reading remains below the site action level. Trend is rising over the reporting period — recommend review before badge day 25. Badge shelf-life and dose readings are independently confirmed valid at time of each scan.</p>
+          </div>
+        </div>
+
+        <div class="report-foot">
+          <div class="sig-block">
+            <div class="sig-line">Safety Officer</div>
+          </div>
+          <div class="qr-mock"></div>
+          <div class="sig-block">
+            <div class="sig-line">Site In-Charge</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="export-row">
+      <button class="exp-btn">Export CSV</button>
+      <button class="exp-btn primary">Export PDF</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('.tab-btn');
+  const panels = document.querySelectorAll('.panel');
+  function showPanel(name){
+    tabs.forEach(t=>t.classList.toggle('active', t.dataset.panel===name));
+    panels.forEach(p=>p.classList.toggle('active', p.id==='panel-'+name));
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  tabs.forEach(t=>t.addEventListener('click', ()=>showPanel(t.dataset.panel)));
+  document.querySelectorAll('[data-goto]').forEach(el=>{
+    el.addEventListener('click', ()=>showPanel(el.dataset.goto));
+  });
+
+  // segmented control on scan screen (visual only)
+  const segDose = document.getElementById('seg-dose');
+  const segExpiry = document.getElementById('seg-expiry');
+  if(segDose && segExpiry){
+    segDose.addEventListener('click', ()=>{ segDose.classList.add('active'); segExpiry.classList.remove('active'); });
+    segExpiry.addEventListener('click', ()=>{ segExpiry.classList.add('active'); segDose.classList.remove('active'); });
+  }
+
+  // capture button -> simulate processing -> jump to result
+  const captureBtn = document.getElementById('capture-btn');
+  if(captureBtn){
+    captureBtn.addEventListener('click', ()=>{
+      const screen = captureBtn.closest('.phone-screen');
+      const original = screen.innerHTML;
+      screen.innerHTML = `
+        <div class="status-row"><span>9:44</span><span>PROCESSING</span></div>
+        <div class="processing">
+          <div class="spin"></div>
+          <p>Correcting for ambient light...</p>
+          <p>Matching against reference scale...</p>
+          <p>Applying temp/humidity compensation...</p>
+        </div>`;
+      setTimeout(()=>{ showPanel('result'); screen.innerHTML = original; }, 1400);
+    });
+  }
+</script>
+
+</body>
+</html>
